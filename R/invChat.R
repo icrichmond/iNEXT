@@ -296,51 +296,40 @@ invSize <- function(x, datatype="abundance", size=NULL, conf=NULL){
 #' data(ant)
 #' estimateD(ant, "incidence_freq", base="coverage", level=0.985, conf=NULL)
 #' @export
-estimateD <- function(x, datatype="abundance", base="size", level=NULL, conf=0.95){
+estimateD <- function (x, q = c(0,1,2), datatype = "abundance", base = "size", level = NULL, nboot=50,
+                       conf = 0.95) 
+{
   TYPE <- c("abundance", "incidence", "incidence_freq", "incidence_raw")
-  #TYPE <- c("abundance", "incidence")
-  if(is.na(pmatch(datatype, TYPE)))
+  if (is.na(pmatch(datatype, TYPE))) 
     stop("invalid datatype")
-  if(pmatch(datatype, TYPE) == -1)
+  if (pmatch(datatype, TYPE) == -1) 
     stop("ambiguous datatype")
   datatype <- match.arg(datatype, TYPE)
-  
-  if(datatype == "incidence"){
-    stop('datatype="incidence" was no longer supported after v2.0.8, 
-         please try datatype="incidence_freq".')  
+  if (datatype == "incidence") {
+    stop("datatype=\"incidence\" was no longer supported after v2.0.8, \n         please try datatype=\"incidence_freq\".")
   }
-  if(datatype=="incidence_freq") datatype <- "incidence"
-  
-  if(datatype=="incidence_raw"){
-    if(class(x)=="data.frame" | class(x)[1]=="matrix") x <- as.incfreq(x)
-    else if(class(x)=="list") x <- lapply(x, as.incfreq)
+  if (datatype == "incidence_freq") 
+    datatype <- "incidence"
+  if (datatype == "incidence_raw") {
+    if (inherits(x, "data.frame") | inherits(x, "matrix")) 
+      x <- as.incfreq(x)
+    else if (inherits(x, "list")) 
+      x <- lapply(x, as.incfreq)
     datatype <- "incidence"
   }
-    
   BASE <- c("size", "coverage")
-  if(is.na(pmatch(base, BASE)))
+  if (is.na(pmatch(base, BASE))) 
     stop("invalid datatype")
-  if(pmatch(base, BASE) == -1)
+  if (pmatch(base, BASE) == -1) 
     stop("ambiguous datatype")
   base <- match.arg(base, BASE)
-  
-  if(base=="size"){
-    tmp <- invSize(x, datatype, size=level, conf=conf)
-  }else if(base=="coverage"){
-    tmp <- invChat(x, datatype, C=level, conf=conf)
+  if (base == "size") {
+    tmp <- invSize(x, q, datatype, size = level, nboot, conf = conf)
   }
-  
-  tmp <- tmp[!duplicated(tmp),]
-  
-  nam <- names(x)
-  if(is.null(nam)){
-    tmp
-  }else if(ncol(tmp)==6){
-    tmp <- cbind(site=nam, tmp)
-  }else{
-    tmp <- cbind(site=rep(nam, each=3), tmp)
+  else if (base == "coverage") {
+    tmp <- invChat(x, q, datatype, C = level, nboot, conf = conf)
   }
-  rownames(tmp) <- NULL
+  tmp$qD.LCL[tmp$qD.LCL<0] <- 0
   tmp
 }
 
